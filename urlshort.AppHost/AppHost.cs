@@ -22,4 +22,9 @@ builder.AddProject<Projects.urlshort>("urlshort")
         });
     });
 
+if (builder.ExecutionContext.IsRunMode)
+{
+    keycloak.WithRealmImport("./realms");
+}
+
 builder.Build().Run();

@@ -4,7 +4,6 @@ using Microsoft.OpenApi;
 using ShorterUrls.Cache;
 using ShorterUrls.Data;
 using urlshort.Endpoints;
-using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,12 +60,11 @@ using (var scope = app.Services.CreateScope())
 
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-    await context.Database.EnsureCreatedAsync();
-
     if ((await context.Database.GetPendingMigrationsAsync()).Any())
     {
         await context.Database.MigrateAsync();
     }
+    await context.Database.EnsureCreatedAsync();
 }
 
 app.MapDefaultEndpoints();

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ShorterUrls.Cache;
 using ShorterUrls.Data;
 using System.Security.Claims;
+using urlshort.Dtos;
 
 namespace urlshort.Endpoints
 {
@@ -10,7 +11,7 @@ namespace urlshort.Endpoints
     {
         public static void MapEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapPost("shorturl", async (urlshortenRequest url, RandomizedCharachters helper, ApplicationDbContext context, HttpContext http) =>
+            app.MapPost("shorturl", async (urlshortenRequest url, RandomizedCharachters helper, ApplicationDbContext context, HttpContext http, ClaimsPrincipal cp) =>
             {
                 if (url.Alias != null)
                 {
@@ -24,17 +25,19 @@ namespace urlshort.Endpoints
                         return Results.BadRequest("هذا الاختصار مرتبط مسبقاً");
                     }
 
+                    var idResult = Guid.TryParse(cp.FindFirst(ClaimTypes.NameIdentifier)?.Value, out Guid data);
                     var validUrlObject = new Url
                     {
                         Id = url.Alias,
                         LongUrl = url.Url,
-                        ShortUrl = $"{http.Request.Scheme}://{http.Request.Host}/{url.Alias}"
+                        ShortUrl = $"{http.Request.Scheme}://{http.Request.Host}/{url.Alias}",
+                        KeyCloackId = data
                     };
                     context.Urls.Add(validUrlObject);
 
                     await context.SaveChangesAsync();
 
-                    return Results.Ok(new UrlShortenResponse
+                    return Results.Ok(new UrlShortenAddResponse
                     {
                         ShortenUrl = validUrlObject.ShortUrl
                     });
@@ -47,16 +50,19 @@ namespace urlshort.Endpoints
 
                 var randomId = await helper.GetRandomString(7);
 
+                var Res = Guid.TryParse(cp.FindFirst(ClaimTypes.NameIdentifier)?.Value, out Guid result);
+
                 var newUrlObject = new Url
                 {
                     Id = randomId,
                     LongUrl = url.Url,
-                    ShortUrl = $"{http.Request.Scheme}://{http.Request.Host}/{randomId}"
+                    ShortUrl = $"{http.Request.Scheme}://{http.Request.Host}/{randomId}",
+                    KeyCloackId = result
                 };
 
                 await context.Urls.AddAsync(newUrlObject);
                 await context.SaveChangesAsync();
-                return Results.Ok(new UrlShortenResponse
+                return Results.Ok(new UrlShortenAddResponse
                 {
                     ShortenUrl = newUrlObject.ShortUrl
                 });
@@ -89,9 +95,15 @@ namespace urlshort.Endpoints
 
             //
 
-            app.MapGet("info", (ClaimsPrincipal claimsPrincipal) =>
+            app.MapGet("myurls", (ApplicationDbContext context, ClaimsPrincipal claimsPrincipal) =>
             {
-                return Results.Ok(claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+                var id = Guid.TryParse(claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value,out Guid iddata);
+                var data = context.Urls.Where(x => x.KeyCloackId == iddata).Select(x => new UserUrlsRepsonse
+                {
+                    Shorturl = x.ShortUrl,
+                    Longurl = x.LongUrl
+                });
+                return Results.Ok(data);
             }).RequireAuthorization();
         }
     }

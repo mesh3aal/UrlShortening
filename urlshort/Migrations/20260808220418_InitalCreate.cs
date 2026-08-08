@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -15,6 +16,7 @@ namespace urlshort.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "text", nullable: false),
+                    KeyCloackId = table.Column<Guid>(type: "uuid", nullable: false),
                     LongUrl = table.Column<string>(type: "text", nullable: false),
                     ShortUrl = table.Column<string>(type: "text", nullable: false),
                     ClickCount = table.Column<int>(type: "integer", nullable: false)

@@ -8,7 +8,7 @@ public class RandomizedCharachters(ApplicationDbContext context)
     {
         while (true)
         {
-            const string pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*_";
+            const string pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!$*_";
 
             StringBuilder builder = new StringBuilder();
 
