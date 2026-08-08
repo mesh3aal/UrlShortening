@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="urlshort.AppHost/urlshort.AppHost.csproj" Id="ca79d79c-fa15-48cf-aa1b-b3cb38d64e0d" />
+  <Project Path="urlshort.ServiceDefaults/urlshort.ServiceDefaults.csproj" />
+  <Project Path="urlshort/urlshort.csproj" />
+</Solution>

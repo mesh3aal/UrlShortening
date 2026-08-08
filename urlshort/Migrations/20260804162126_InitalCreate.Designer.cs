@@ -8,18 +8,18 @@ using ShorterUrls.Data;
 
 #nullable disable
 
-namespace ShorterUrls.Migrations
+namespace urlshort.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260707113205_initalMigration")]
-    partial class initalMigration
+    [Migration("20260804162126_InitalCreate")]
+    partial class InitalCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);

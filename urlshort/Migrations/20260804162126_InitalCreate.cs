@@ -2,10 +2,10 @@
 
 #nullable disable
 
-namespace ShorterUrls.Migrations
+namespace urlshort.Migrations
 {
     /// <inheritdoc />
-    public partial class initalMigration : Migration
+    public partial class InitalCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
