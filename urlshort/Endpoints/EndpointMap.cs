@@ -48,7 +48,17 @@ namespace urlshort.Endpoints
                     return Results.BadRequest("الرابط المعطى غير صحيح");
                 }
 
-                var randomId = await helper.GetRandomString(7);
+                 string randomId;
+
+                while (true)
+                {
+                    var temp = helper.GetRandomString(7);
+                    if(!await context.Urls.AnyAsync(x => x.Id == temp))
+                    {
+                        randomId = temp;
+                        break;
+                    }
+                }
 
                 var Res = Guid.TryParse(cp.FindFirst(ClaimTypes.NameIdentifier)?.Value, out Guid result);
 
