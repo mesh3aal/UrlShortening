@@ -11,6 +11,7 @@
 [![Keycloak](https://img.shields.io/badge/Keycloak-OAuth2%20%2F%20OIDC-4D4D4D?style=for-the-badge&logo=keycloak&logoColor=white)](https://www.keycloak.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Unit Tests](https://img.shields.io/badge/Unit%20Tests-xUnit%20%7C%20Moq%20%7C%20FluentAssertions-2ea44f?style=for-the-badge&logo=xunit&logoColor=white)](https://xunit.net/)
 [![Swagger](https://img.shields.io/badge/Swagger-API%20Docs-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://swagger.io/)
 
 </div>
@@ -27,6 +28,7 @@
 - [واجهة Swagger UI](#-واجهة-swagger-ui)
 - [نقاط النهاية — API Endpoints](#-نقاط-النهاية--api-endpoints)
 - [بنية المشروع](#-بنية-المشروع)
+- [الاختبارات — Unit Tests](#-الاختبارات--unit-tests)
 - [التشغيل — Getting Started](#-التشغيل--getting-started)
 - [التقنيات المستخدمة](#-التقنيات-المستخدمة)
 
@@ -626,10 +628,163 @@ urlshort/
 │   ├── 📂 Migrations/                 ← هجرات قاعدة البيانات
 │   └── appsettings.json               ← إعدادات التطبيق
 │
+├── 📂 tests/                          ← 🧪 مشروع اختبارات الوحدة (Unit Tests)
+│   ├── RandomizedCharachtersTests.cs  ← اختبارات مولد المعرفات العشوائية
+│   ├── RedisCacheTests.cs             ← اختبارات طبقة التخزين المؤقت مع Moq
+│   └── tests.csproj                   ← إعدادات وحزم الاختبارات (xUnit, Moq, FluentAssertions)
+│
 ├── 📂 urlshort.ServiceDefaults/       ← 🛡️ الخدمات المشتركة
 │   └── Extensions.cs                 ← OpenTelemetry + Health Checks + Resilience
 │
 └── urlshort.slnx                      ← ملف الحل (Solution)
+```
+
+---
+
+## 🧪 الاختبارات — Unit Tests
+
+يحتوي المشروع على مشروع اختبارات مستقل ومكتمل (`tests/`) مبني وفق أفضل ممارسات هندسة البرمجيات لاختبار وحدات النظام الأساسية بمعزل تام (Isolation) عن الخدمات الخارجية.
+
+```mermaid
+graph LR
+    subgraph "🧪 بيئة الاختبارات (tests.csproj)"
+        XU["xUnit 2.9<br/>محرك الاختبارات"]
+        FA["FluentAssertions 8.10<br/>التأكيدات التعبيرية"]
+        MQ["Moq 4.20<br/>محاكاة التبعيات"]
+    end
+
+    subgraph "🎯 المكونات المختبرة (Target Units)"
+        RC["RandomizedCharachters<br/>مولد الرموز العشوائية"]
+        RDC["RedisCache<br/>طبقة التخزين المؤقت"]
+    end
+
+    XU --> RC
+    XU --> RDC
+    MQ -.->|"محاكاة IDistributedCache"| RDC
+    FA -->|"التحقق من النتائج"| XU
+
+    style XU fill:#2E86C1,stroke:#1B4F72,color:#fff
+    style FA fill:#27AE60,stroke:#1E8449,color:#fff
+    style MQ fill:#8E44AD,stroke:#5B2C6F,color:#fff
+    style RC fill:#D35400,stroke:#A04000,color:#fff
+    style RDC fill:#C0392B,stroke:#922B21,color:#fff
+```
+
+### 🛠️ مكتبات وأدوات الاختبار
+
+| الأداة | الإصدار | الغرض |
+|--------|---------|-------|
+| **xUnit** | `2.9.3` | إطار العمل الرئيسي لكتابة وتشغيل اختبارات الوحدة |
+| **FluentAssertions** | `8.10.0` | كتابة شروط وتحققات مرنة وقابلة للقراءة بأسلوب سلس (`Should()`) |
+| **Moq** | `4.20.72` | محاكاة وتزييف التبعيات (Mocking) مثل واجهة `IDistributedCache` |
+| **NSubstitute** | `6.2.0` | أداة Mocking إضافية مدعومة في المشروع |
+| **Coverlet** | `10.0.1` | جمع وقياس تقارير تغطية الكود البرمجي (Code Coverage) |
+
+---
+
+### 📊 مصفوفة الاختبارات (Test Matrix)
+
+| الفئة المختبرة | طريقة الاختبار (Test Method) | الهدف والتحقق | النمط المتبع |
+|---|---|---|:---:|
+| `RandomizedCharachtersTests` | `GetRandomString_ShouldReturn_StringOfRequestedLength` | التأكد من أن المعرف المُولد يطابق الطول المحدد (7 محارف) بدقة | **AAA** |
+| `RandomizedCharachtersTests` | `GetRandomString_ShouldReturnFalse_StringOfRequestedLength` | التأكد من رفض وعدم توليد أطوال غير مطابقة (مثل 6 محارف) | **AAA** |
+| `RandomizedCharachtersTests` | `GetRandomString_ShouldReturn_True_ifWithinPool` | التحقق من أن جميع المحارف تنتمي للمجموعة المسموحة فقط (`a-z`, `A-Z`, `0-9`, `!$*_`) | **AAA** |
+| `RandomizedCharachtersTests` | `GetRandomString_ShouldReturn_stringType` | التحقق من صحة نوع البيانات المرجعة كـ `string` | **AAA** |
+| `RedisCacheTests` | `GetData_WhenKeyExists_ShouldReturnDeserializedObject` | استرجاع البيانات وفك تسلسل JSON إلى كائن `Url` بنجاح عند وجود المفتاح (Cache Hit) | **Given-When-Then** + Moq |
+| `RedisCacheTests` | `GetData_WhenKeyDoesNotExist_ShouldReturnDefault` | التأكد من إرجاع `null` عند عدم وجود المفتاح في الكاش (Cache Miss) | **Given-When-Then** + Moq |
+| `RedisCacheTests` | `SetData_WhenCalled_ShouldSerializeAndStoreInCacheWithExpiration` | التحقق من تسلسل الكائن واستدعاء `Set` مع ضبط مدة الصلاحية لـ **5 دقائق** | **Given-When-Then** + Moq Verify |
+
+---
+
+### 🔍 تفاصيل مجموعات الاختبارات
+
+#### 1️⃣ اختبارات مولد المعرفات (`RandomizedCharachtersTests.cs`)
+
+تختبر هذه المجموعة صحة وأمان توليد معرفات الروابط القصيرة العشوائية:
+
+- **التحقق من الطول المطلوب:** التأكد من أن `GetRandomString(7)` تعيد نصاً بطول 7 خانات بالضبط عبر `result.Should().HaveLength(7)`.
+- **التحقق من حوض المحارف (Character Pool):** ضمان أن المحارف المولدة تقع حصرياً ضمن:
+  ```
+  abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!$*_
+  ```
+- **استخدام نمط AAA (Arrange-Act-Assert):**
+
+```csharp
+[Fact]
+public void GetRandomString_ShouldReturn_True_ifWithinPool()
+{
+    // ARRANGE
+    string pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!$*_";
+    var sut = new RandomizedCharachters();
+
+    // ACT
+    var result = sut.GetRandomString(7);
+
+    // ASSERT
+    result.AsEnumerable().Should().OnlyContain(c => pool.Contains(c));
+}
+```
+
+---
+
+#### 2️⃣ اختبارات التخزين المؤقت (`RedisCacheTests.cs`)
+
+تختبر خدمة `RedisCache` بمعزل تام عن خادم Redis الحقيقي باستخدام محاكاة `Mock<IDistributedCache>`:
+
+- **حالة وجود المفتاح (Cache Hit):** محاكاة إرجاع مصفوفة بايتات `byte[]` لبيانات JSON والتأكد من فك تسلسلها إلى كائن `Url` مكافئ بالأصل.
+- **حالة عدم وجود المفتاح (Cache Miss):** محاكاة إرجاع `null` والتأكد من أن النتيجة هي `null`.
+- **حفظ البيانات وصلاحية الكاش (Expiration TTL):** التحقق من استدعاء دالة `Set` لمرة واحدة (`Times.Once`) وتأكيد ضبط مدة الصلاحية على 5 دقائق (`TimeSpan.FromMinutes(5)`):
+
+```csharp
+[Fact]
+public void SetData_WhenCalled_ShouldSerializeAndStoreInCacheWithExpiration()
+{
+    // Given
+    var stub = new Mock<IDistributedCache>();
+    var sut = new RedisCache(stub.Object);
+
+    var data = new Url
+    {
+        Id = "abc1234",
+        LongUrl = "https://example.com",
+        ShortUrl = "https://short.ly/abc1234"
+    };
+    var expectedJson = JsonSerializer.Serialize(data);
+
+    // When
+    sut.SetData("key", data);
+
+    // Then
+    stub.Verify(x => x.Set(
+        "key",
+        It.Is<byte[]>(b => Encoding.UTF8.GetString(b) == expectedJson),
+        It.Is<DistributedCacheEntryOptions>(opt => opt.AbsoluteExpirationRelativeToNow == TimeSpan.FromMinutes(5))
+    ), Times.Once);
+}
+```
+
+---
+
+### 💻 أوامر تشغيل الاختبارات
+
+#### تشغيل كافة الاختبارات عبر Solution:
+```bash
+dotnet test urlshort.slnx
+```
+
+#### تشغيل مشروع الاختبارات مباشرة:
+```bash
+dotnet test tests/tests.csproj
+```
+
+#### تشغيل الاختبارات مع تقرير تفصيلي (Detailed Verbosity):
+```bash
+dotnet test urlshort.slnx --logger "console;verbosity=detailed"
+```
+
+#### جمع تقرير تغطية الكود البرمجي (Code Coverage):
+```bash
+dotnet test urlshort.slnx --collect:"XPlat Code Coverage"
 ```
 
 ---
@@ -707,6 +862,12 @@ curl -L https://localhost:5001/gh
 # → يُعيد التوجيه إلى https://github.com/mesh3aal
 ```
 
+#### 5. تشغيل اختبارات الوحدة (Unit Tests)
+
+```bash
+dotnet test urlshort.slnx
+```
+
 ---
 
 ## 🧰 التقنيات المستخدمة
@@ -722,6 +883,10 @@ curl -L https://localhost:5001/gh
 | Swashbuckle | 10.2.3 | Swagger UI + OpenAPI |
 | OpenTelemetry | 1.15.x | المراقبة والتتبع |
 | Polly | Integrated | المرونة ومعالجة الأخطاء |
+| xUnit | 2.9.3 | إطار عمل اختبارات الوحدة (Unit Testing) |
+| FluentAssertions | 8.10.0 | مكتبة التحقق والتأكيدات التعبيرية |
+| Moq | 4.20.72 | محاكاة وتزييف التبعيات (Mocking) |
+| Coverlet | 10.0.1 | جمع تقارير تغطية الأكواد (Code Coverage) |
 
 ---
 
