@@ -140,7 +140,6 @@ namespace urlshort.Endpoints
                 });
                 return Results.Ok(data);
             }).RequireAuthorization();
-
         }
     }
 }

@@ -46,7 +46,6 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("react",policy =>
